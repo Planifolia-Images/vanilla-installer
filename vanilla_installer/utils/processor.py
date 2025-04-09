@@ -602,10 +602,10 @@ class Processor:
             # Run `grub-install` with the boot partition as target
             grub_type = "efi" if Systeminfo.is_uefi() else "bios"
             recipe.add_postinstall_step(
-                "grub-install", ["/mnt/a/boot", boot_disk, grub_type, efi_part]
+                "grub-install", ["/mnt/a/boot", boot_disk, grub_type, efi_part, "--removable"]
             )
             recipe.add_postinstall_step(
-                "grub-install", ["/boot", boot_disk, grub_type, efi_part], chroot=True
+                "grub-install", ["/boot", boot_disk, grub_type, efi_part, "--removable"], chroot=True
             )
 
             # Run `grub-mkconfig` to generate files for the boot partition
