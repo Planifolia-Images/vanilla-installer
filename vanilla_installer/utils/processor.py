@@ -569,8 +569,8 @@ class Processor:
             recipe.add_postinstall_step(
                 "shell",
                 [
-                    "mkdir -p /etc/gdm3",
-                    "echo '[daemon]\nAutomaticLogin=vanilla\nAutomaticLoginEnable=True' > /etc/gdm3/daemon.conf",
+                    "mkdir -p /etc/gdm",
+                    "echo '[daemon]\nAutomaticLogin=vanilla\nAutomaticLoginEnable=True' > /etc/gdm/daemon.conf",
                     "mkdir -p /home/vanilla/.config/dconf",
                     "chmod 700 /home/vanilla/.config/dconf",
                 ],
@@ -625,21 +625,20 @@ class Processor:
                 "shell", ["umount -l /mnt/a/boot", "mkdir -p /mnt/a/boot/grub"]
             )
 
-            # Since /usr/sbin/grub-mkconfig deletes itself after the first invocation
-            # we need to use the alternative path
-            recipe.add_postinstall_step(
-                "shell", ["ln -s /usr/libexec/grub-mkconfig /usr/sbin/grub-mkconfig"], chroot=True
-            )
+            # Since /usr/sbin and /usr/bin it's symlinks im can't do that
+            #recipe.add_postinstall_step(
+            #    "shell", ["ln -s /usr/libexec/grub-mkconfig /usr/sbin/grub-mkconfig"], chroot=True
+            #)
 
             # Run `grub-mkconfig` inside the root partition
             recipe.add_postinstall_step(
                 "grub-mkconfig", ["/boot/grub/grub.cfg"], chroot=True
             )
 
-            # Delete link again so that users don't break their system with it
-            recipe.add_postinstall_step(
-                "shell", ["rm /usr/sbin/grub-mkconfig"], chroot=True
-            )
+            # It have check for don't run from system, and i can't remove it because FsGuard
+            #recipe.add_postinstall_step(
+            #    "shell", ["rm /usr/sbin/grub-mkconfig"], chroot=True
+            #)
 
             # Copy init files to init LV
             recipe.add_postinstall_step(
@@ -649,7 +648,7 @@ class Processor:
                     "mount /dev/vos-root/init /.system/boot/init",
                     "mkdir /.system/boot/init/vos-a",
                     "mkdir /.system/boot/init/vos-b",
-                    "mv /.system/boot/vmlinuz* /.system/boot/init/vos-a",
+                    "mv /mnt/a/usr/lib/modules/$(ls -1 /mnt/a/usr/lib/modules | sed '1p;d') /.system/boot/init/vos-a/vmlinuz-$(ls -1 /mnt/a/usr/lib/modules | sed '1p;d')",
                 ],
                 chroot=True,
             )
@@ -686,7 +685,7 @@ class Processor:
                     "mkdir -p /var/media",
                     "mkdir -p /var/root",
                     "mkdir -p /var/lib/abroot/etc/vos-a /var/lib/abroot/etc/vos-b /var/lib/abroot/etc/vos-a-work /var/lib/abroot/etc/vos-b-work",
-                    "mount -t overlay overlay -o lowerdir=/.system/etc,upperdir=/var/lib/abroot/etc/vos-a,workdir=/var/lib/abroot/etc/vos-a-work /etc",
+                    "mount -t overlay overlay -o lowerdir=/.system/etc,upperdir=/var/lib/abroot/etc/vos-a,workdir=/var/lib/abroot/etc/vos-a-work,index=off,metacopy=off /etc",
                     "mv /var/storage /var/lib/abroot/",
                     "mount -o bind /var/home /home",
                     "mount -o bind /var/opt /opt",
@@ -766,7 +765,7 @@ class Processor:
             [
                 f"mount {boot_part} /boot",
                 f"mount {efi_part} /boot/efi",
-                "update-initramfs -c -k all",
+                "update-initramfs -u",
                 "mkdir /var/tmp/vanilla-generated-initrd",
                 "cp -a /boot/initrd* /var/tmp/vanilla-generated-initrd/",
                 "umount -l /boot/efi",
